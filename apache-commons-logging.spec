@@ -8,7 +8,7 @@
 
 Name:           %{?scl_prefix}apache-%{short_name}
 Version:        1.1.2
-Release:        5.2%{?dist}
+Release:        5.4%{?dist}
 Summary:        Apache Commons Logging
 License:        ASL 2.0
 Group:          Development/Libraries
@@ -17,23 +17,17 @@ Source0:        http://www.apache.org/dist/commons/%{base_name}/source/%{short_n
 Source2:        http://mirrors.ibiblio.org/pub/mirrors/maven2/%{short_name}/%{short_name}-api/1.1/%{short_name}-api-1.1.pom
 
 BuildArch:      noarch
-BuildRequires:  maven-local
-BuildRequires:  java-devel >= 1:1.6.0
-BuildRequires:  jpackage-utils >= 0:1.6
-BuildRequires:  avalon-framework >= 4.3
-BuildRequires:  avalon-logkit
-BuildRequires:  apache-commons-parent >= 26-7
-BuildRequires:  maven-dependency-plugin
-BuildRequires:  maven-failsafe-plugin
-BuildRequires:  maven-plugin-build-helper
-BuildRequires:  maven-release-plugin
-BuildRequires:  maven-site-plugin
-BuildRequires:  maven-resources-plugin
+BuildRequires:  maven30-maven-local
+BuildRequires:  maven30-avalon-framework >= 4.3
+BuildRequires:  maven30-avalon-logkit
+BuildRequires:  maven30-apache-commons-parent >= 26-7
+BuildRequires:  maven30-maven-dependency-plugin
+BuildRequires:  maven30-maven-failsafe-plugin
+BuildRequires:  maven30-maven-plugin-build-helper
+BuildRequires:  maven30-maven-release-plugin
+BuildRequires:  maven30-maven-site-plugin
+BuildRequires:  maven30-maven-resources-plugin
 BuildRequires:  servlet
-
-# autorequires are disabled
-Requires:       java >= 1.5
-Requires:       jpackage-utils
 
 # This should go away with F-17
 Provides:       %{?scl_prefix}jakarta-%{short_name} = 0:%{version}-%{release}
@@ -63,7 +57,7 @@ Obsoletes:      %{?scl_prefix}jakarta-%{short_name}-javadoc <= 0:1.0.4
 # -----------------------------------------------------------------------------
 
 %prep
-%{?scl:scl enable %{scl} - << "EOF"}
+%{?scl:scl enable maven30 %{scl} - << "EOF"}
 %setup -q -n %{short_name}-%{version}-src
 
 # Sent upstream https://issues.apache.org/jira/browse/LOGGING-143
@@ -97,13 +91,13 @@ rm -f src/test/java/org/apache/commons/logging/security/SecurityAllowedTestCase.
 %{?scl:EOF}
 
 %build
-%{?scl:scl enable %{scl} - << "EOF"}
+%{?scl:scl enable maven30 %{scl} - << "EOF"}
 %mvn_build
 %{?scl:EOF}
 # -----------------------------------------------------------------------------
 
 %install
-%{?scl:scl enable %{scl} - << "EOF"}
+%{?scl:scl enable maven30 %{scl} - << "EOF"}
 %mvn_install
 
 install -p -m 644 target/%{short_name}-api-%{version}.jar %{buildroot}/%{_javadir}/%{pkg_name}-api.jar
@@ -132,6 +126,12 @@ install -pm 644 %{SOURCE2} %{buildroot}/%{_mavenpomdir}/JPP-%{short_name}-api.po
 # -----------------------------------------------------------------------------
 
 %changelog
+* Tue Jun 17 2014 Severin Gehwolf <sgehwolf@redhat.com> - 1.1.2-5.4
+- Enable maven30 collection only in spec file.
+
+* Mon Jun 16 2014 Severin Gehwolf <sgehwolf@redhat.com> - 1.1.2-5.3
+- Rebuild against maven30 collection.
+
 * Mon Jan 20 2014 Omair Majid <omajid@redhat.com> - 1.1.2-5.2
 - Rebuild in order to fix osgi()-style provides.
 - Resolves: RHBZ#1054813
