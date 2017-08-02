@@ -1,0 +1,160 @@
+From d8356a58efde0808cabede14b4f1b2473fa73170 Mon Sep 17 00:00:00 2001
+From: Mikolaj Izdebski <mizdebsk@redhat.com>
+Date: Tue, 31 May 2016 10:52:12 +0200
+Subject: [PATCH 2/2] Port to maven-jar-plugin 3.0.0
+
+---
+ pom.xml                                            | 47 +++++-----------------
+ .../logging/pathable/ChildFirstTestCase.java       |  8 ++--
+ .../logging/pathable/ParentFirstTestCase.java      |  8 ++--
+ 3 files changed, 17 insertions(+), 46 deletions(-)
+
+diff --git a/pom.xml b/pom.xml
+index 5707595..c5d8d37 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -237,6 +237,10 @@ under the License.
+         <artifactId>maven-jar-plugin</artifactId>
+         <executions>
+           <execution>
++	    <id>default-jar</id>
++	    <phase>skip</phase>
++	  </execution>
++	  <execution>
+             <!--
+               - The custom test framework requires the unit test code to be
+               - in a jarfile so it can control its place in the classpath.
+@@ -261,7 +265,7 @@ under the License.
+               <goal>jar</goal>
+             </goals>
+             <configuration>
+-              <jarName>${project.artifactId}-api-${project.version}</jarName>
++              <classifier>api</classifier>
+               <archive>
+                 <manifestFile>${project.build.directory}/osgi-api/MANIFEST.MF</manifestFile>
+               </archive>
+@@ -288,7 +292,7 @@ under the License.
+               <goal>jar</goal>
+             </goals>
+             <configuration>
+-              <jarName>${project.artifactId}-adapters-${project.version}</jarName>
++              <classifier>adapters</classifier>
+               <archive>
+                 <manifestFile>${project.build.directory}/osgi-adapters/MANIFEST.MF</manifestFile>
+               </archive>
+@@ -346,39 +350,6 @@ under the License.
+ 
+       <plugin>
+         <!--
+-          - Attach the adapters and api jars to the normal artifact. This way
+-          - they will be deployed when the normal artifact is deployed.
+-          -->
+-        <groupId>org.codehaus.mojo</groupId>
+-        <artifactId>build-helper-maven-plugin</artifactId>
+-        <version>1.0</version>
+-        <executions>
+-          <execution>
+-            <id>attach-artifacts</id>
+-            <phase>package</phase>
+-            <goals>
+-              <goal>attach-artifact</goal>
+-            </goals>
+-            <configuration>
+-              <artifacts>
+-                <artifact>
+-                  <file>${project.build.directory}/${project.artifactId}-adapters-${project.version}.jar</file>
+-                  <type>jar</type>
+-                  <classifier>adapters</classifier>
+-                </artifact>
+-                <artifact>
+-                  <file>${project.build.directory}/${project.artifactId}-api-${project.version}.jar</file>
+-                  <type>jar</type>
+-                  <classifier>api</classifier>
+-                </artifact>
+-              </artifacts>
+-            </configuration>
+-          </execution>
+-        </executions>
+-      </plugin>
+-
+-      <plugin>
+-        <!--
+           - Many of JCL's tests use tricky techniques to place the generated
+           - JCL jarfiles on the classpath in various configurations. This means
+           - that those tests must be run *after* the "package" build phase.
+@@ -442,9 +413,9 @@ under the License.
+                   <logkit>${logkit:logkit:jar}</logkit>
+                   <servlet-api>${javax.servlet:servlet-api:jar}</servlet-api>
+                   <commons-logging>target/${project.build.finalName}.jar</commons-logging>
+-                  <commons-logging-api>target/${project.artifactId}-api-${project.version}.jar</commons-logging-api>
+-                  <commons-logging-adapters>target/${project.artifactId}-adapters-${project.version}.jar</commons-logging-adapters>
+-                  <testclasses>target/commons-logging-tests.jar</testclasses>
++                  <commons-logging-api>target/${project.artifactId}-${project.version}-api.jar</commons-logging-api>
++                  <commons-logging-adapters>target/${project.artifactId}-${project.version}-adapters.jar</commons-logging-adapters>
++                  <testclasses>target/commons-logging-${project.version}-tests.jar</testclasses>
+               </systemPropertyVariables>
+             </configuration>
+           </execution>
+diff --git a/src/test/java/org/apache/commons/logging/pathable/ChildFirstTestCase.java b/src/test/java/org/apache/commons/logging/pathable/ChildFirstTestCase.java
+index 1aeb12d..eb67ec1 100644
+--- a/src/test/java/org/apache/commons/logging/pathable/ChildFirstTestCase.java
++++ b/src/test/java/org/apache/commons/logging/pathable/ChildFirstTestCase.java
+@@ -213,11 +213,11 @@ public class ChildFirstTestCase extends TestCase {
+         // getResource where it is accessable to both classloaders. The one visible
+         // to the child should be returned. The URL returned will be of form
+         //  jar:file:/x/y.jar!path/to/resource. The filename part should include the jarname
+-        // of form commons-logging-adapters-nnnn.jar, not commons-logging-nnnn.jar
++        // of form commons-logging-nnnn-adapters.jar, not commons-logging-nnnn.jar
+         resource = childLoader.getResource("org/apache/commons/logging/impl/Log4JLogger.class");
+         assertNotNull("Unable to locate Log4JLogger.class resource", resource);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                resource.toString().indexOf("/commons-logging-adapters-1.") > 0);
++                resource.toString().indexOf("/commons-logging-1.2-adapters.jar!") > 0);
+     }
+ 
+     /**
+@@ -269,9 +269,9 @@ public class ChildFirstTestCase extends TestCase {
+         urlsToStrings[1] = urls[1].toString();
+         Arrays.sort(urlsToStrings);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                urlsToStrings[0].indexOf("/commons-logging-1.") > 0);
++                urlsToStrings[0].indexOf("/commons-logging-1.2-adapters.jar!") > 0);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                urlsToStrings[1].indexOf("/commons-logging-adapters-1.") > 0);
++                urlsToStrings[1].indexOf("/commons-logging-1.2.jar!") > 0);
+     }
+ 
+     /**
+diff --git a/src/test/java/org/apache/commons/logging/pathable/ParentFirstTestCase.java b/src/test/java/org/apache/commons/logging/pathable/ParentFirstTestCase.java
+index f9bf452..fc10c8e 100644
+--- a/src/test/java/org/apache/commons/logging/pathable/ParentFirstTestCase.java
++++ b/src/test/java/org/apache/commons/logging/pathable/ParentFirstTestCase.java
+@@ -210,11 +210,11 @@ public class ParentFirstTestCase extends TestCase {
+         // getResource where it is accessable to both classloaders. The one visible
+         // to the parent should be returned. The URL returned will be of form
+         //  jar:file:/x/y.jar!path/to/resource. The filename part should include the jarname
+-        // of form commons-logging-nnnn.jar, not commons-logging-adapters-nnnn.jar
++        // of form commons-logging-nnnn.jar, not commons-logging-nnnn-adapters.jar
+         resource = childLoader.getResource("org/apache/commons/logging/impl/Log4JLogger.class");
+         assertNotNull("Unable to locate Log4JLogger.class resource", resource);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                resource.toString().indexOf("/commons-logging-1.") > 0);
++                resource.toString().indexOf("/commons-logging-1.2.jar!") > 0);
+     }
+     
+     /**
+@@ -259,9 +259,9 @@ public class ParentFirstTestCase extends TestCase {
+         urlsToStrings[1] = urls[1].toString();
+         Arrays.sort(urlsToStrings);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                urlsToStrings[0].indexOf("/commons-logging-1.") > 0);
++                urlsToStrings[0].indexOf("/commons-logging-1.2-adapters.jar!") > 0);
+         assertTrue("Incorrect source for Log4JLogger class",
+-                urlsToStrings[1].indexOf("/commons-logging-adapters-1.") > 0);
++                urlsToStrings[1].indexOf("/commons-logging-1.2.jar!") > 0);
+         
+     }
+ 
+-- 
+2.5.5
+

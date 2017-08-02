@@ -1,0 +1,99 @@
+From d71aa7acc93b944b159ac63f85d9ba1a566f5a8d Mon Sep 17 00:00:00 2001
+From: Mikolaj Izdebski <mizdebsk@redhat.com>
+Date: Tue, 29 Jul 2014 09:00:03 +0200
+Subject: [PATCH 1/2] Generate different Bundle-SymbolicName for different JARs
+
+---
+ pom.xml | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+
+diff --git a/pom.xml b/pom.xml
+index cdad31c..5707595 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -179,6 +179,52 @@ under the License.
+   <build>
+     <plugins>
+ 
++      <plugin>
++        <groupId>org.apache.felix</groupId>
++        <artifactId>maven-bundle-plugin</artifactId>
++        <executions>
++          <execution>
++            <id>tests-bundle-manifest</id>
++            <phase>process-classes</phase>
++            <goals>
++              <goal>manifest</goal>
++            </goals>
++            <configuration>
++              <manifestLocation>${project.build.directory}/osgi-tests</manifestLocation>
++              <instructions>
++                <Bundle-SymbolicName>${commons.osgi.symbolicName}.tests</Bundle-SymbolicName>
++              </instructions>
++            </configuration>
++          </execution>
++          <execution>
++            <id>api-bundle-manifest</id>
++            <phase>process-classes</phase>
++            <goals>
++              <goal>manifest</goal>
++            </goals>
++            <configuration>
++              <manifestLocation>${project.build.directory}/osgi-api</manifestLocation>
++              <instructions>
++                <Bundle-SymbolicName>${commons.osgi.symbolicName}.api</Bundle-SymbolicName>
++              </instructions>
++            </configuration>
++          </execution>
++          <execution>
++            <id>adapters-bundle-manifest</id>
++            <phase>process-classes</phase>
++            <goals>
++              <goal>manifest</goal>
++            </goals>
++            <configuration>
++              <manifestLocation>${project.build.directory}/osgi-adapters</manifestLocation>
++              <instructions>
++                <Bundle-SymbolicName>${commons.osgi.symbolicName}.adapters</Bundle-SymbolicName>
++              </instructions>
++            </configuration>
++          </execution>
++        </executions>
++      </plugin>
++
+       <!--
+         - We want to create four jarfiles from this project: normal, tests, api
+         - and adapters. The first two are handled by the normal jar:jar and
+@@ -202,6 +248,9 @@ under the License.
+             </goals>
+             <configuration>
+               <jarName>commons-logging</jarName>
++              <archive>
++                <manifestFile>${project.build.directory}/osgi-tests/MANIFEST.MF</manifestFile>
++              </archive>
+             </configuration>
+           </execution>
+ 
+@@ -213,6 +262,9 @@ under the License.
+             </goals>
+             <configuration>
+               <jarName>${project.artifactId}-api-${project.version}</jarName>
++              <archive>
++                <manifestFile>${project.build.directory}/osgi-api/MANIFEST.MF</manifestFile>
++              </archive>
+               <includes>
+                 <include>org/apache/commons/logging/*.class</include>
+                 <include>org/apache/commons/logging/impl/LogFactoryImpl*.class</include>
+@@ -237,6 +289,9 @@ under the License.
+             </goals>
+             <configuration>
+               <jarName>${project.artifactId}-adapters-${project.version}</jarName>
++              <archive>
++                <manifestFile>${project.build.directory}/osgi-adapters/MANIFEST.MF</manifestFile>
++              </archive>
+               <includes>
+                 <include>org/apache/commons/logging/impl/**.class</include>
+                 <include>META-INF/LICENSE.txt</include>
+-- 
+2.5.5
+
